@@ -1,0 +1,12 @@
+#include <stdosl.h>
+
+surface phong (
+    color diffuse_col = color(0.6, 0.8, 0.6),
+    float exponent = 1.0,
+    output color bsdf = 0
+) 
+{
+    //bsdf = microfacet_ggx(N, exponent) + diffuse(N) * diffuse_col; // Phong model
+    //bsdf = diffuse_col * diffuse(N); // 
+    bsdf = N;
+}

@@ -1,0 +1,82 @@
+#include <stdosl.h>
+
+surface Strauss (
+    // Light 
+    color lightColor    = color(1.0, 1.0, 1.0),
+    vector lPos         = vector(1.0, 1.0, 1.0),
+    // Material 
+    color objectColor   = color(1.0, 1.0, 1.0),
+    float smoothness    = 0.5,
+    float metalness     = 0.5,
+    float transparency  = 0.5,
+    // Vertex
+    vector vPos         = vector(1.0, 1.0, 1.0),
+    vector viewVector   = vector(1.0, 1.0, 1.0),
+    output color bsdf = 0
+)
+{
+    // Fresnel Attenuation
+    float F(float x){
+        float kf = 1.12;
+        float numerator = (1 / pow((x - kf), 2) ) - ( 1 / pow(kf, 2));
+        float denominator = (1 / pow((1 - kf), 2) ) - ( 1 / pow(kf, 2));
+        float result = numerator / denominator;
+        return result;
+    }
+    
+    // Geometric attenuation
+    float G(float x){
+        float kg = 1.01;
+        float numerator = (1 / pow( (1-kg), 2)) - ( 1 / pow( (x-kg), 2 ) );
+        float denominator = (1 / pow( (1-kg), 2)) - (1 / pow(kg, 2));
+        float result = numerator / denominator;
+        return result;
+    }
+    // 
+    
+    
+    // Initialize vectors
+    vector L = normalize(-lPos - vPos);
+    //vector N already exist
+    vector R = normalize(reflect(L, N));
+    //vector V = normalize( -(vPos) );
+    vector V   = viewVector;
+    vector H   = R;
+    
+    // Initialize parameters
+    color C = objectColor;
+    float s = smoothness;
+    float m = metalness;
+    float t = transparency;
+    
+    // calculate components
+    //// Component Qd:
+    float d = (1 - m*s);
+    float rd = (1 - pow(s, 3)) * (1 - t);
+    color Qd = dot(N, L) * d * rd * C;
+    Qd = max(Qd, vector(0.0, 0.0, 0.0));
+    
+    //// Component Qs:
+    // Qs = rs * Cs
+    // rs:
+    float alpha = dot(N, L);
+    float gamma = dot(N, V);
+    float h = 3 / (1 - s);
+    float rn = (1 - t) - rd;
+    float kj = 0.1;
+    float j = F(alpha) * G(alpha) * G(gamma);
+    float rj = min(1, rn + (rn + kj) * j); // kj = 0.1
+    float rs = pow(-dot(R, V), h) * rj; // H = R
+    
+    // Cs
+    vector C1 = lightColor;
+    vector Cs = C1 + m * (1 - F(alpha)) * (C - C1);
+    
+    // Qs
+    color Qs = rs * Cs;
+    Qs = max(Qs, vector(0.0, 0.0, 0.0));
+    
+    color Ir = Qd + Qs;
+    
+    bsdf = Ir;
+}
